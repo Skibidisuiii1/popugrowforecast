@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d18">
+    <meta name="description"
+        content="Изучайте рост населения, демографию, миграцию и будущее человечества с помощью Population Predictor.">
+    <title>Population Predictor | Исследуй человечество</title>
+
+    <!-- Подключаем Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Подключаем Globe.gl для интерактивного глобуса -->
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <style>
+        :root {
+            --bg: #080d18;
+            --bg-soft: #0c1423;
+            --panel: #111c2e;
+            --panel-2: #16243a;
+            --border: #26364d;
+            --text: #f0f6ff;
+            --muted: #94a7c2;
+            --blue: #38bdf8;
+            --blue-dark: #0ea5e9;
+            --green: #34d399;
+            --red: #fb7185;
+            --yellow: #fbbf24;
+            --purple: #a78bfa;
+            --radius: 20px;
+            --shadow: 0 16px 45px rgba(0, 0, 0, .22);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 90px;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse at 10% 0%, rgba(56, 189, 248, .09), transparent 35%),
+                radial-gradient(ellipse at 90% 20%, rgba(52, 211, 153, .05), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+                BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.6;
+            transition: background .25s, color .25s;
+        }
+
+        body.light-theme {
+            --bg: #f1f5fb;
+            --bg-soft: #e8eff8;
+            --panel: #ffffff;
+            --panel-2: #f4f8fd;
+            --border: #d4dfec;
+            --text: #17263d;
+            --muted: #5c6f89;
+            --shadow: 0 12px 32px rgba(27, 55, 90, .09);
+            background: var(--bg);
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 3px;
+        }
+
+        a {
+            color: var(--blue);
+            text-decoration: none;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+        }
+
+        .hidden,
+        [hidden] {
+            display: none !important;
+        }
+
+        /* Navigation */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(8, 13, 24, .88);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(18px);
+        }
+
+        .light-theme .topbar {
+            background: rgba(255, 255, 255, .9);
+        }
+
+        .nav-inner {
+            max-width: 1240px;
+            margin: auto;
+            min-height: 72px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 18px;
+            font-weight: 850;
+            letter-spacing: -.5px;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0ea5e9, #34d399);
+            color: #06111f;
+            font-size: 22px;
+            box-shadow: 0 5px 22px rgba(56, 189, 248, .2);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .nav-link,
+        .theme-toggle {
+            border: 1px solid transparent;
+            color: var(--muted);
+            background: transparent;
+            border-radius: 11px;
+            padding: 9px 13px;
+            font-size: 13px;
+            font-weight: 700;
+            transition: .2s;
+        }
+
+        .nav-link:hover,
+        .theme-toggle:hover {
+            color: var(--text);
+            background: var(--panel);
+        }
+
+        .nav-link.active {
+            color: var(--blue);
+            background: rgba(56, 189, 248, .1);
+            border-color: rgba(56, 189, 248, .16);
+        }
+
+        .theme-toggle {
+            border-color: var(--border);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        /* Main layout */
+        main {
+            width: min(1160px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 36px 0 80px;
+        }
+
+        .page {
+            animation: pageIn .35s ease both;
+        }
+
+        @keyframes pageIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--green);
+            font-size: 11px;
+            font-weight: 850;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 20px;
+            height: 2px;
+            background: var(--green);
+            border-radius: 3px;
+        }
+
+        h1, h2, h3, p {
+            margin-top: 0;
+        }
+
+        h1, h2, h3 {
+            line-height: 1.2;
+            letter-spacing: -.6px;
+        }
+
+        h1 {
+            font-size: clamp(34px, 5vw, 57px);
+            margin: 16px 0;
+        }
+
+        h2 {
+            font-size: clamp(24px, 3vw, 34px);
+            margin-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 19px;
+        }
+
+        .subtitle, .muted {
+            color: var(--muted);
+        }
+
+        .subtitle {
+            max-width: 700px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 20px;
+            margin: 44px 0 20px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        /* Buttons */
+        .btn {
+            min-height: 43px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 17px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--panel-2);
+            color: var(--text);
+            font-weight: 750;
+            font-size: 13px;
+            transition: transform .2s, border-color .2s, background .2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--blue);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+            color: #041321;
+            border-color: transparent;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #38bdf8, #7dd3fc);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: #05251c;
+            border-color: transparent;
+        }
+
+        .btn-danger {
+            color: var(--red);
+            border-color: rgba(251, 113, 133, .35);
+        }
+
+        .btn-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(28px, 5vw, 58px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background:
+                radial-gradient(ellipse at 85% 15%, rgba(56, 189, 248, .15), transparent 38%),
+                linear-gradient(140deg, var(--panel), var(--bg-soft));
+            box-shadow: var(--shadow);
+        }
+
+        .hero::after {
+            content: "🌍";
+            position: absolute;
+            right: 5%;
+            top: 12%;
+            font-size: clamp(85px, 14vw, 165px);
+            opacity: .13;
+            filter: saturate(.8);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 760px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(90deg, var(--blue), var(--green));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero .subtitle {
+            margin-bottom: 25px;
+        }
+
+        /* Cards and grids */
+        .grid {
+            display: grid;
+            gap: 18px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .panel {
+            min-width: 0;
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .panel-header h3 {
+            margin-bottom: 6px;
+        }
+
+        .panel-header p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .metric-card {
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            background: var(--panel);
+        }
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 850;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            margin: 8px 0 2px;
+            font-size: clamp(23px, 3vw, 34px);
+            font-weight: 850;
+            letter-spacing: -1px;
+            overflow-wrap: anywhere;
+        }
+
+        .metric-note {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .blue-text { color: var(--blue); }
+        .green-text { color: var(--green); }
+        .red-text { color: var(--red); }
+        .yellow-text { color: var(--yellow); }
+        .purple-text { color: var(--purple); }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 17px;
+        }
+
+        .field {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field label,
+        .field-label {
+            font-size: 13px;
+            font-weight: 750;
+            color: var(--text);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="search"],
+        select {
+            width: 100%;
+            min-width: 0;
+            min-height: 45px;
+            padding: 11px 13px;
+            color: var(--text);
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, .1);
+        }
+
+        input[readonly] { opacity: .8; }
+
+        input::placeholder {
+            color: var(--muted);
+            opacity: .8;
+        }
+
+        select option {
+            background: var(--panel);
+            color: var(--text);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--blue);
+            cursor: pointer;
+        }
+
+        .field-help {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .segmented {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .segmented button {
+            flex: 1;
+            min-height: 42px;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            color: var(--muted);
+            background: var(--bg-soft);
+            font-weight: 750;
+            font-size: 13px;
+        }
+
+        .segmented button.active {
+            color: var(--blue);
+            border-color: var(--blue);
+            background: rgba(56, 189, 248, .1);
+        }
+
+        /* Predictor */
+        .predictor-layout {
+            display: grid;
+            grid-template-columns: minmax(280px, .85fr) minmax(0, 1.4fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .result-box {
+            margin-top: 18px;
+            padding: 22px;
+            border: 1px solid rgba(56, 189, 248, .3);
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, .1), rgba(52, 211, 153, .045));
+        }
+
+        .result-number {
+            font-size: clamp(27px, 4vw, 40px);
+            font-weight: 900;
+            overflow-wrap: anywhere;
+            line-height: 1.3;
+            margin: 8px 0;
+        }
+
+        .result-description {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            min-height: 240px;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+        }
+
+        .status-message {
+            min-height: 22px;
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .status-message.error { color: var(--red); }
+        .status-message.success { color: var(--green); }
+
+        /* Game catalogue */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .game-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 235px;
+            overflow: hidden;
+            text-align: left;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 19px;
+            background: var(--panel);
+            color: var(--text);
+            transition: transform .22s, border-color .22s, box-shadow .22s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, .7);
+            box-shadow: 0 15px 36px rgba(0, 0, 0, .22);
+        }
+
+        .game-art {
+            position: relative;
+            display: grid;
+            place-items: center;
+            height: 112px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 70% 30%, rgba(56, 189, 248, .24), transparent 42%),
+                linear-gradient(135deg, #14263d, #0c1423);
+        }
+
+        .game-art::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(8, 13, 24, .45), transparent 75%);
+        }
+
+        .game-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .4s;
+        }
+
+        .game-card:hover .game-art img {
+            transform: scale(1.06);
+        }
+
+        .game-emoji {
+            position: relative;
+            z-index: 1;
+            font-size: 48px;
+            filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .2));
+        }
+
+        .game-card-body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
+            padding: 17px;
+        }
+
+        .game-card h3 {
+            font-size: 16px;
+            margin-bottom: 7px;
+        }
+
+        .game-card p {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        .game-tag {
+            margin-top: auto;
+            padding: 5px 9px;
+            border-radius: 8px;
+            color: var(--blue);
+            background: rgba(56, 189, 248, .1);
+            font-size: 10px;
+            font-weight: 850;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* Individual game screens */
+        .game-screen {
+            margin-top: 24px;
+            padding: clamp(20px, 4vw, 34px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            animation: pageIn .3s ease;
+        }
+
+        .game-screen-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .game-screen-header h2 {
+            margin: 8px 0;
+        }
+
+        .game-screen-header p {
+            max-width: 680px;
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .game-stat {
+            padding: 17px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--bg-soft);
+        }
+
+        .game-stat span {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+        }
+
+        .game-stat strong {
+            display: block;
+            margin-top: 7px;
+            font-size: 24px;
+            overflow-wrap: anywhere;
+        }
+
+        .game-feedback {
+            padding: 15px 17px;
+            margin-top: 17px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: var(--bg-soft);
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .game-feedback.good {
+            border-color: rgba(52, 211, 153, .35);
+            color: var(--green);
+        }
+
+        .game-feedback.bad {
+            border-color: rgba(251, 113, 133, .35);
+            color: var(--red);
+        }
+
+        .game-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .choice-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .choice-btn {
+            padding: 14px;
+            text-align: left;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            background: var(--bg-soft);
+            transition: .2s;
+        }
+
+        .choice-btn:hover {
+            border-color: var(--blue);
+            background: var(--panel-2);
+        }
+
+        .choice-btn:disabled {
+            cursor: default;
+            opacity: .75;
+        }
+
+        .choice-btn.correct {
+            border-color: var(--green);
+            background: rgba(52, 211, 153, .1);
+        }
+
+        .choice-btn.incorrect {
+            border-color: var(--red);
+            background: rgba(251, 113, 133, .08);
+        }
+
+        /* Timeline */
+        .timeline-intro {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(24px, 5vw, 55px);
+            border-radius: 22px;
+            background:
+                linear-gradient(100deg, rgba(8, 13, 24, .96), rgba(8, 13, 24, .65)),
+                url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1600&q=85") center/cover;
+            border: 1px solid var(--border);
+        }
+
+        .timeline-intro h2 {
+            font-size: clamp(32px, 5vw, 54px);
+        }
+
+        .timeline-intro p {
+            max-width: 580px;
+            color: #b8c8dc;
+        }
+
+        .timeline-sticky {
+            position: sticky;
+            top: 88px;
+            z-index: 5;
+            margin: 20px 0;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: rgba(12, 20, 35, .94);
+            backdrop-filter: blur(15px);
+        }
+
+        .light-theme .timeline-sticky {
+            background: rgba(255, 255, 255, .94);
+        }
+
+        .timeline-year {
+            color: var(--blue);
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .timeline-population {
+            color: var(--green);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .timeline-progress {
+            height: 5px;
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--border);
+        }
+
+        .timeline-progress-fill {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--blue), var(--green));
+        }
+
+        .timeline-chapter {
+            min-height: 65vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: clamp(30px, 7vw, 85px) 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-chapter h3 {
+            font-size: clamp(26px, 4vw, 42px);
+        }
+
+        .timeline-chapter p {
+            max-width: 720px;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.9;
+        }
+
+        .timeline-chapter .timeline-date {
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 850;
+            letter-spacing: 2px;
+        }
+
+        .timeline-image {
+            width: 100%;
+            max-height: 380px;
+            margin-top: 20px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+        }
+
+        /* World ranking and city builder */
+        .data-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .data-row {
+            display: grid;
+            grid-template-columns: 38px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 13px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-soft);
+        }
+
+        .data-rank {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+        .data-row-name {
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .data-row-value {
+            text-align: right;
+            font-weight: 850;
+            color: var(--blue);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-track {
+            height: 7px;
+            margin-top: 7px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: var(--border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--blue), var(--green));
+            transition: width .3s;
+        }
+
+        /* Footer */
+        .site-footer {
+            width: min(1160px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 25px 0 35px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Country information card */
+        #earthCountryInfo {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(125, 211, 252, 0.2);
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(15, 30, 52, 0.98), rgba(8, 17, 32, 0.98));
+            padding: 24px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #earthCountryInfo:hover {
+            border-color: rgba(56, 189, 248, 0.55);
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.08);
+        }
+
+        #earthCountryInfo .country-flag {
+            width: 76px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 16px;
+        }
+
+        #earthCountryInfo .country-title {
+            font-size: 26px;
+            margin: 0 0 20px;
+            color: #f1f5f9;
+        }
+
+        #earthCountryInfo .country-stat {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        #earthCountryInfo .country-stat:last-child {
+            border-bottom: none;
+        }
+
+        #earthCountryInfo .country-stat strong {
+            display: block;
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin-bottom: 5px;
+        }
+
+        #earthCountryInfo .country-stat span {
+            color: #e2e8f0;
+            font-size: 15px;
+            overflow-wrap: anywhere;
+        }
+
+        @keyframes countryCardEnter {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #earthCountryInfo .country-card-content {
+            animation: countryCardEnter 0.35s ease both;
+        }
+
+        @media (max-width: 900px) {
+            .nav-inner { flex-wrap: wrap; justify-content: center; }
+            .brand { margin-right: auto; }
+            .nav-links { order: 3; width: 100%; justify-content: center; }
+            .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-3, .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .predictor-layout { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 580px) {
+            main { width: calc(100% - 24px); padding-top: 20px; }
+            .nav-inner { padding: 10px 12px; gap: 8px; }
+            .brand { font-size: 15px; }
+            .brand-icon { width: 36px; height: 36px; }
+            .nav-link { padding: 8px 10px; font-size: 12px; }
+            .hero { padding: 25px 20px; border-radius: 20px; }
+            .hero::after { right: -8px; top: 25px; font-size: 80px; }
+            .grid-2, .grid-3, .grid-4, .games-grid, .form-grid, .choice-grid { grid-template-columns: 1fr; }
+            .panel { padding: 18px; }
+            .game-card { min-height: 205px; }
+            .game-art { height: 125px; }
+            .game-screen { padding: 18px; }
+            .game-screen-header { flex-direction: column; }
+            .timeline-sticky { top: 118px; }
+            .chart-container { height: 270px; }
+            .footer-inner { flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Навигационная панель -->
+    <header class="topbar">
+        <div class="nav-inner">
+            <div class="brand">
+                <div class="brand-icon">🌍</div>
+                <span>Population Predictor</span>
+            </div>
+            <nav class="nav-links">
+                <button class="nav-link active" data-page="home" onclick="showPage('home')">Главная</button>
+                <button class="nav-link" data-page="predictor" onclick="showPage('predictor')">Прогноз</button>
+                <button class="nav-link" data-page="games" onclick="showPage('games')">Интерактив</button>
+                <button class="nav-link" data-page="earth" onclick="openEarthPage()">Глобус Земли</button>
+                <button class="nav-link" data-page="about" onclick="showPage('about')">О проекте</button>
+            </nav>
+            <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">☀️ Тема</button>
+        </div>
+    </header>
+
+    <!-- Основное содержимое -->
+    <main>
+        <!-- СТРАНИЦА 1: ГЛАВНАЯ -->
+        <section id="homePage" class="page">
+            <div class="hero">
+                <div class="hero-content">
+                    <span class="eyebrow">ИССЛЕДУЙ ДЕМОГРАФИЮ</span>
+                    <h1>Будущее человечества в ваших <span>руках</span>.</h1>
+                    <p class="subtitle">Изучайте рост населения, моделируйте сценарии развития стран, экспериментируйте с рождаемостью и миграцией с помощью интерактивных инструментов.</p>
+                    <div class="btn-row">
+                        <button class="btn btn-primary" onclick="showPage('predictor')">Перейти к прогнозу</button>
+                        <button class="btn" onclick="showPage('games')">Открыть интерактив</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-heading">
+                <div>
+                    <h2>Исследуйте ключевые разделы</h2>
+                    <p>Выберите интересующий инструмент или начните симуляцию.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-3">
+                <div class="panel" style="cursor: pointer;" onclick="showPage('predictor')">
+                    <div style="font-size: 32px; margin-bottom: 12px;">📈</div>
+                    <h3>Прогноз населения</h3>
+                    <p class="muted">Рассчитывайте изменение численности населения по странам мира или с помощью собственных параметров.</p>
+                </div>
+                <div class="panel" style="cursor: pointer;" onclick="showPage('games')">
+                    <div style="font-size: 32px; margin-bottom: 12px;">🎮</div>
+                    <h3>Интерактивные мини-игры</h3>
+                    <p class="muted">10 увлекательных симуляций: от управления городским бюджетом до исторических путешествий во времени.</p>
+                </div>
+                <div class="panel" style="cursor: pointer;" onclick="openEarthPage()">
+                    <div style="font-size: 32px; margin-bottom: 12px;">🌐</div>
+                    <h3>Интерактивный глобус</h3>
+                    <p class="muted">Исследуйте страны мира на объёмной 3D-модели Земли с актуальными данными.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА 2: ПРОГНОЗ НАСЕЛЕНИЯ -->
+        <section id="predictorPage" class="page" style="display: none;">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">МОДЕЛИРОВАНИЕ РОСТА</span>
+                    <h2 id="forecastTitle">Прогноз населения</h2>
+                    <p id="forecastSubtitle">Изучи, как численность населения может меняться со временем.</p>
+                </div>
+                <div class="segmented">
+                    <button id="countryModeButton" class="active" onclick="setInputMode('country')">По странам мира</button>
+                    <button id="manualModeButton" onclick="setInputMode('manual')">Свои значения</button>
+                </div>
+            </div>
+
+            <div class="predictor-layout">
+                <div class="panel">
+                    <!-- Режим выбора страны -->
+                    <div id="countrySection">
+                        <div class="field">
+                            <label for="countrySearch">Поиск страны</label>
+                            <input id="countrySearch" type="search" placeholder="Начни вводить название страны...">
+                            <div id="countryResults" class="choice-grid" style="display: none; max-height: 180px; overflow-y: auto; margin-top: 5px;"></div>
+                        </div>
+                        <div class="field" style="margin-top: 15px; display: none;">
+                            <label for="country">Выбранная страна</label>
+                            <select id="country" onchange="selectCountry()"></select>
+                        </div>
+                    </div>
+
+                    <!-- Режим ручного ввода -->
+                    <div id="manualSection" style="display: none;">
+                        <div class="field">
+                            <label for="manualPopulation">Текущая численность населения</label>
+                            <input id="manualPopulation" type="number" min="1" value="8000000000" oninput="syncManualPopulation()">
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top: 18px;">
+                        <label for="population">Численность населения (скрытое поле)</label>
+                        <input id="population" type="number" min="1" value="8000000000" oninput="calculatePrediction()" readonly style="display: none;">
+                    </div>
+
+                    <div class="field" style="margin-top: 18px;">
+                        <label id="rateLabel" for="rate">Текущий темп роста (%)</label>
+                        <input id="rate" type="number" min="-10" max="20" step="0.01" value="0.9" oninput="calculatePrediction()">
+                    </div>
+
+                    <div class="field" style="margin-top: 18px;">
+                        <label for="years">Период прогноза (лет): <strong id="yearsValue" class="blue-text">30</strong></label>
+                        <input id="years" type="range" min="1" max="100" value="30" oninput="document.getElementById('yearsValue').textContent = this.value; calculatePrediction();">
+                    </div>
+
+                    <p id="countryStatus" class="status-message" style="margin-top: 15px;">Выбери страну или введи параметры вручную.</p>
+                </div>
+
+                <div class="panel">
+                    <h3>График прогноза</h3>
+                    <div class="chart-container">
+                        <canvas id="populationChart"></canvas>
+                    </div>
+
+                    <div id="result" class="result-box" style="margin-top: 20px;">
+                        <div class="result-description">Прогнозируемая численность населения через указанный период:</div>
+                        <div id="prediction" class="result-number blue-text">—</div>
+                        <div id="change" class="result-description">Изменение: —</div>
+                    </div>
+
+                    <div class="grid grid-2" style="margin-top: 15px;">
+                        <div class="game-stat"><span>Текущее население</span><strong id="currentPopulation">—</strong></div>
+                        <div class="game-stat"><span>Изменение</span><strong id="populationChange" class="green-text">—</strong></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА 3: ИНТЕРАКТИВНЫЕ ИГРЫ -->
+        <section id="interactiveLab" class="page" style="display: none;">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">ЛАБОРАТОРИЯ И ИГРЫ</span>
+                    <h2>Интерактивные мини-игры</h2>
+                    <p>Выбирайте симуляцию и экспериментируйте с демографическими моделями.</p>
+                </div>
+            </div>
+
+            <div class="games-grid">
+                <button class="game-card" onclick="openGame('simulator')">
+                    <div class="game-art"><div class="game-emoji">🌍</div></div>
+                    <div class="game-card-body">
+                        <h3>Симулятор населения</h3>
+                        <p>Управляйте рождаемостью, смертностью и миграцией.</p>
+                        <span class="game-tag">Моделирование</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('birth')">
+                    <div class="game-art"><div class="game-emoji">👶</div></div>
+                    <div class="game-card-body">
+                        <h3>Испытание рождаемостью</h3>
+                        <p>Настраивайте меры поддержки семей и оценивайте их влияние.</p>
+                        <span class="game-tag">Стратегия</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('race')">
+                    <div class="game-art"><div class="game-emoji">🏁</div></div>
+                    <div class="game-card-body">
+                        <h3>Гонка роста населения</h3>
+                        <p>Сравнивайте темпы роста двух стран или регионов.</p>
+                        <span class="game-tag">Сравнение</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('2050')">
+                    <div class="game-art"><div class="game-emoji">⏳</div></div>
+                    <div class="game-card-body">
+                        <h3>Население сквозь время</h3>
+                        <p>Интерактивная шкала истории человечества от древности до наших дней.</p>
+                        <span class="game-tag">История</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('balance')">
+                    <div class="game-art"><div class="game-emoji">⚖️</div></div>
+                    <div class="game-card-body">
+                        <h3>Демографический баланс</h3>
+                        <p>Решайте задачи на естественный и миграционный прирост.</p>
+                        <span class="game-tag">Задачи</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('migration')">
+                    <div class="game-art"><div class="game-emoji">✈️</div></div>
+                    <div class="game-card-body">
+                        <h3>Симулятор миграции</h3>
+                        <p>Перемещайте потоки людей между регионами и анализируйте результаты.</p>
+                        <span class="game-tag">Миграция</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('quiz')">
+                    <div class="game-art"><div class="game-emoji">🧠</div></div>
+                    <div class="game-card-body">
+                        <h3>Викторина о населении</h3>
+                        <p>Проверьте свои знания о демографии и мировой статистике.</p>
+                        <span class="game-tag">Тест</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('ranking')">
+                    <div class="game-art"><div class="game-emoji">🏆</div></div>
+                    <div class="game-card-body">
+                        <h3>Рейтинг населения</h3>
+                        <p>Актуальный рейтинг стран мира по данным Всемирного банка.</p>
+                        <span class="game-tag">Данные</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('city')">
+                    <div class="game-art"><div class="game-emoji">🏙️</div></div>
+                    <div class="game-card-body">
+                        <h3>Строитель города</h3>
+                        <p>Распределяйте городской бюджет и создавайте комфортные условия.</p>
+                        <span class="game-tag">Менеджмент</span>
+                    </div>
+                </button>
+
+                <button class="game-card" onclick="openGame('crisis')">
+                    <div class="game-art"><div class="game-emoji">🚨</div></div>
+                    <div class="game-card-body">
+                        <h3>Демографический кризис</h3>
+                        <p>Принимайте сложные решения в кризисных ситуациях.</p>
+                        <span class="game-tag">Сценарии</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Игровая панель / экран конкретной игры -->
+            <div id="gameArea" class="game-screen" hidden>
+                <div class="game-screen-header">
+                    <div>
+                        <span class="eyebrow">АКТИВНАЯ ИГРА</span>
+                        <h2 id="gameTitle">Название игры</h2>
+                        <p id="gameDescription">Описание игры</p>
+                    </div>
+                    <button class="btn" onclick="closeGame()">✕ Закрыть игру</button>
+                </div>
+                <div id="gameContent"></div>
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА 4: ГЛОБУС ЗЕМЛИ (3D) -->
+        <section id="earthPage" class="page" style="display: none;">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">ТРЕХМЕРНАЯ МОДЕЛЬ ПЛАНЕТЫ</span>
+                    <h2>Интерактивный глобус Земли</h2>
+                    <p>Кликайте на страны на глобусе, чтобы узнать подробную информацию.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="panel" style="padding: 12px; overflow: hidden;">
+                    <div id="populationMap" style="width: 100%; height: 400px; border-radius: 12px; overflow: hidden;"></div>
+                    <p id="earthStatus" class="status-message" style="margin-top: 10px; text-align: center;">Загрузка глобуса...</p>
+                </div>
+                <div class="panel">
+                    <h3>Информация о стране</h3>
+                    <div id="earthCountryInfo">
+                        <p class="muted">Нажмите на любую страну на трёхмерном глобусе слева, чтобы загрузить данные о ней (название, столицу, население, площадь и валюту).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА 5: О ПРОЕКТЕ -->
+        <section id="aboutPage" class="page" style="display: none;">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">О ПРИЛОЖЕНИИ</span>
+                    <h2>Population Predictor</h2>
+                    <p>Образовательный проект для изучения демографии и будущего человечества.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>О проекте</h3>
+                <p class="subtitle">Population Predictor создан для того, чтобы помочь учащимся, исследователям и всем интересующимся наглядно знакомиться с демографическими процессами, ростом населения, миграцией и урбанизацией.</p>
+                <p class="subtitle">В проекте используются открытые данные Всемирного банка и математические модели прогнозирования численности населения.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Футер -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <span>© 2026 Population Predictor</span>
+            <span>Исследуй демографию и будущее человечества</span>
+        </div>
+    </footer>
+
+    <!-- СКРИПТЫ ПРИЛОЖЕНИЯ -->
+    <script>
+        "use strict";
+
+        const $ = id => document.getElementById(id);
+
+        const numberFormat = value =>
+            Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+        const populationFormat = value => {
+            if (!Number.isFinite(Number(value))) return "—";
+            const n = Number(value);
+            if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + " млрд";
+            if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + " млн";
+            return numberFormat(Math.round(n));
+        };
+
+        function setFeedback(id, message, type = "") {
+            const element = $(id);
+            if (!element) return;
+            element.textContent = message;
+            element.className = "game-feedback" + (type ? " " + type : "");
+        }
+
+        function makeChart(canvasId, labels, datasets, options = {}) {
+            const canvas = $(canvasId);
+            if (!canvas || typeof Chart === "undefined") return null;
+
+            if (canvas._chartInstance) {
+                canvas._chartInstance.destroy();
+            }
+
+            const chart = new Chart(canvas, {
+                type: options.type || "line",
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 250 },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#94a7c2"
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: "#94a7c2", maxTicksLimit: 9 },
+                            grid: { color: "rgba(148,167,194,.12)" }
+                        },
+                        y: {
+                            beginAtZero: options.beginAtZero !== false,
+                            ticks: {
+                                color: "#94a7c2",
+                                callback: value => numberFormat(value)
+                            },
+                            grid: { color: "rgba(148,167,194,.12)" }
+                        }
+                    },
+                    ...options.extra
+                }
+            });
+
+            canvas._chartInstance = chart;
+            return chart;
+        }
+
+        async function worldBankIndicator(countryCode, indicator) {
+            const url = `https://api.worldbank.org/v2/country/${encodeURIComponent(countryCode)}/indicator/${indicator}?format=json&per_page=100`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Ошибка запроса к Всемирному банку");
+            const data = await response.json();
+            if (!Array.isArray(data[1])) throw new Error("Данные недоступны");
+            const latest = data[1].find(item => item.value !== null);
+            if (!latest) throw new Error("Нет актуальных наблюдений");
+            return latest;
+        }
+
+        /* НАВИГАЦИЯ И ТЕМА */
+        function showPage(page) {
+            const pages = {
+                home: $("homePage"),
+                predictor: $("predictorPage"),
+                games: $("interactiveLab"),
+                earth: $("earthPage"),
+                about: $("aboutPage")
+            };
+
+            if (!pages[page]) return;
+
+            Object.entries(pages).forEach(([name, element]) => {
+                element.style.display = name === page ? "block" : "none";
+            });
+
+            document.querySelectorAll(".nav-link").forEach(button => {
+                button.classList.toggle("active", button.dataset.page === page);
+            });
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event("resize"));
+            });
+        }
+
+        function openEarthPage() {
+            showPage('earth');
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle("light-theme");
+            const light = document.body.classList.contains("light-theme");
+            $("themeToggle").textContent = light ? "🌙 Тема" : "☀️ Тема";
+
+            try {
+                localStorage.setItem("populationTheme", light ? "light" : "dark");
+            } catch (_) {}
+
+            if (typeof populationChart !== 'undefined' && populationChart) calculatePrediction();
+        }
+
+        (function loadTheme() {
+            try {
+                const light = localStorage.getItem("populationTheme") === "light";
+                document.body.classList.toggle("light-theme", light);
+                $("themeToggle").textContent = light ? "🌙 Тема" : "☀️ Тема";
+            } catch (_) {}
+        })();
+
+        /* ПРОГНОЗ НАСЕЛЕНИЯ */
+        let populationChart = null;
+        let selectedCountryName = "";
+        let selectedCountryCode = "";
+        let countryList = [];
+
+        function setInputMode(mode) {
+            const countryMode = mode === "country";
+
+            $("countrySection").style.display = countryMode ? "block" : "none";
+            $("manualSection").style.display = countryMode ? "none" : "block";
+            $("countryModeButton").classList.toggle("active", countryMode);
+            $("manualModeButton").classList.toggle("active", !countryMode);
+
+            $("rate").readOnly = countryMode;
+            $("rateLabel").textContent = countryMode
+                ? "Текущий темп роста населения страны (%)"
+                : "Собственный темп роста (%)";
+
+            if (countryMode) {
+                $("population").value = "";
+                $("rate").value = "";
+                $("country").value = "";
+                $("countrySearch").value = "";
+                $("countryResults").style.display = "none";
+                $("manualPopulation").value = "";
+                selectedCountryCode = "";
+                selectedCountryName = "";
+                $("countryStatus").textContent = "Выбери страну, чтобы загрузить данные о населении.";
+                $("rate").placeholder = "Сначала выбери страну";
+                $("population").placeholder = "Сначала выбери страну";
+                $("forecastTitle").textContent = "Прогноз населения";
+                $("forecastSubtitle").textContent = "Изучи, как численность населения может меняться со временем.";
+            } else {
+                $("population").value = $("manualPopulation").value;
+                $("rate").value = "";
+                $("rate").placeholder = "Введи темп роста, например 1.2";
+                $("population").placeholder = "Введи текущую численность населения";
+                $("countryStatus").textContent = "";
+                $("forecastTitle").textContent = "Прогноз населения";
+                $("forecastSubtitle").textContent = "Введи собственные значения населения и темпа роста.";
+            }
+
+            $("result").style.display = "none";
+            if (populationChart) {
+                populationChart.destroy();
+                populationChart = null;
+            }
+            $("currentPopulation").textContent = "—";
+            $("populationChange").textContent = "—";
+        }
+
+        function syncManualPopulation() {
+            $("population").value = $("manualPopulation").value;
+            calculatePrediction();
+        }
+
+        async function loadCountries() {
+            const select = $("country");
+            if (!select) return;
+
+            try {
+                const response = await fetch("https://api.worldbank.org/v2/country?format=json&per_page=400");
+                if (!response.ok) throw new Error("Ошибка загрузки списка стран");
+
+                const data = await response.json();
+                if (!Array.isArray(data[1])) throw new Error("Список стран недоступен");
+
+                countryList = data[1]
+                    .filter(country => country.region && country.region.id !== "NA")
+                    .sort((a, b) => a.name.localeCompare(b.name));
+
+                select.innerHTML = '<option value="">Выбери страну...</option>';
+
+                countryList.forEach(country => {
+                    const option = document.createElement("option");
+                    option.value = country.id;
+                    option.textContent = country.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                select.innerHTML = '<option value="">Не удалось загрузить страны</option>';
+                $("countryStatus").textContent = "Не удалось загрузить список стран. Проверь подключение к интернету.";
+                console.error(error);
+            }
+        }
+
+        function filterCountries() {
+            const query = $("countrySearch").value.trim().toLowerCase();
+            const results = $("countryResults");
+            const status = $("countryStatus");
+            if (!results) return;
+
+            results.innerHTML = "";
+            results.style.display = "block";
+
+            const matches = countryList.filter(country =>
+                country.name.toLowerCase().includes(query)
+            );
+
+            if (!matches.length) {
+                results.innerHTML = '<div class="game-feedback">Страны не найдены.</div>';
+                status.textContent = "";
+                return;
+            }
+
+            matches.slice(0, 10).forEach(country => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "choice-btn";
+                item.textContent = country.name;
+                item.onclick = () => {
+                    $("country").value = country.id;
+                    $("countrySearch").value = country.name;
+                    results.style.display = "none";
+                    selectCountry();
+                };
+                results.appendChild(item);
+            });
+
+            status.textContent = query
+                ? `Найдено стран: ${matches.length}${matches.length > 10 ? " (показаны первые 10)" : ""}`
+                : "Список стран";
+        }
+
+        async function selectCountry() {
+            const code = $("country").value;
+            if (!code) return;
+
+            const country = countryList.find(item => item.id === code);
+            if (!country) return;
+
+            selectedCountryCode = code;
+            selectedCountryName = country.name;
+            $("country").disabled = true;
+            $("countryStatus").textContent = "⏳ Загрузка данных о населении и темпах роста...";
+
+            try {
+                const population = await worldBankIndicator(code, "SP.POP.TOTL");
+                $("population").value = population.value;
+                $("forecastTitle").textContent = "Прогноз населения: " + country.name;
+                $("forecastSubtitle").textContent = "Прогноз роста населения для страны «" + country.name + "»";
+
+                try {
+                    const growth = await worldBankIndicator(code, "SP.POP.GROW");
+                    $("rate").value = Number(growth.value).toFixed(2);
+                    $("rate").placeholder = "Автоматически из данных Всемирного банка";
+                    $("rate").readOnly = true;
+                    $("countryStatus").textContent =
+                        `Население: ${numberFormat(population.value)} (${population.date}); темп роста: ${Number(growth.value).toFixed(2)}% (${growth.date}). Данные Всемирного банка.`;
+                } catch (growthError) {
+                    $("rate").value = "";
+                    $("rate").placeholder = "Темп роста недоступен";
+                    $("countryStatus").textContent =
+                        `Данные о населении страны «${country.name}» загружены (${population.date}), но темп роста недоступен.`;
+                }
+
+                calculatePrediction();
+            } catch (error) {
+                $("countryStatus").textContent = "Не удалось загрузить данные страны. Попробуй выбрать другую страну.";
+                console.error(error);
+            } finally {
+                $("country").disabled = false;
+            }
+        }
+
+        function calculatePrediction() {
+            const pRaw = $("population").value;
+            const rRaw = $("rate").value;
+            const yRaw = $("years").value;
+            const p = Number(pRaw);
+            const r = Number(rRaw);
+            const years = Number(yRaw);
+
+            $("result").style.display = "block";
+
+            if (
+                pRaw === "" || rRaw === "" || yRaw === "" ||
+                !Number.isFinite(p) || !Number.isFinite(r) ||
+                !Number.isFinite(years) || p <= 0 || r <= -100 ||
+                years < 0 || years > 500 || !Number.isInteger(years)
+            ) {
+                $("prediction").textContent = "Некорректные данные";
+                $("change").textContent = "Введи положительную численность населения, темп роста выше −100% и целое число лет от 0 до 500.";
+                $("currentPopulation").textContent = "—";
+                $("populationChange").textContent = "—";
+                if (populationChart) {
+                    populationChart.destroy();
+                    populationChart = null;
+                }
+                return;
+            }
+
+            const future = p * Math.pow(1 + r / 100, years);
+
+            if (!Number.isFinite(future)) {
+                $("prediction").textContent = "Слишком большое значение";
+                $("change").textContent = "Попробуй уменьшить темп роста или период прогноза.";
+                if (populationChart) {
+                    populationChart.destroy();
+                    populationChart = null;
+                }
+                return;
+            }
+
+            const difference = future - p;
+            const percent = (future / p - 1) * 100;
+
+            $("currentPopulation").textContent = numberFormat(Math.round(p));
+            $("populationChange").textContent = (difference >= 0 ? "+" : "") + numberFormat(Math.round(difference));
+            $("prediction").textContent = numberFormat(Math.round(future));
+            $("change").textContent = `Изменение: ${difference >= 0 ? "+" : ""}${numberFormat(Math.round(difference))} человек (${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%) за ${years} лет.`;
+
+            const labels = [];
+            const values = [];
+            const currentYear = new Date().getFullYear();
+
+            for (let year = 0; year <= years; year++) {
+                labels.push(String(currentYear + year));
+                values.push(Math.round(p * Math.pow(1 + r / 100, year)));
+            }
+
+            if (populationChart) populationChart.destroy();
+
+            populationChart = makeChart("populationChart", labels, [{
+                label: "Прогнозируемая численность населения",
+                data: values,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,.12)",
+                fill: true,
+                tension: .3,
+                pointRadius: years > 30 ? 0 : 3
+            }], { beginAtZero: false });
+        }
+
+        if ($("countrySearch")) {
+            $("countrySearch").addEventListener("focus", () => {
+                if ($("countrySearch").value.trim()) filterCountries();
+            });
+        }
+
+        document.addEventListener("click", event => {
+            if (!event.target.closest("#countryResults") && event.target !== $("countrySearch")) {
+                const res = $("countryResults");
+                if (res) res.style.display = "none";
+            }
+        });
+
+        /* ИГРЫ И ИНТЕРАКТИВ */
+        const gameNames = {
+            simulator: "🌍 Симулятор населения",
+            birth: "👶 Испытание рождаемостью",
+            race: "🏁 Гонка роста населения",
+            "2050": "⏳ Население сквозь время",
+            balance: "⚖️ Демографический баланс",
+            migration: "✈️ Симулятор миграции",
+            quiz: "🧠 Викторина о населении мира",
+            ranking: "🏆 Рейтинг населения",
+            city: "🏙️ Строитель города",
+            crisis: "🚨 Демографический кризис"
+        };
+
+        let activeGame = "";
+        let activeGameCleanup = null;
+
+        function openGame(id) {
+            if (!gameNames[id]) return;
+
+            if (typeof activeGameCleanup === "function") {
+                activeGameCleanup();
+            }
+            activeGameCleanup = null;
+            activeGame = id;
+
+            $("gameTitle").textContent = gameNames[id];
+            $("gameArea").hidden = false;
+            $("gameContent").innerHTML = "";
+            $("gameDescription").textContent = "Экспериментируй с демографическими изменениями и изучай результаты.";
+
+            const renderers = {
+                simulator: renderSimulator,
+                birth: renderBirthChallenge,
+                race: renderGrowthRace,
+                "2050": renderTimeline,
+                balance: renderBalanceChallenge,
+                migration: renderMigration,
+                quiz: renderQuiz,
+                ranking: renderRanking,
+                city: renderCityBuilder,
+                crisis: renderCrisis
+            };
+
+            if (renderers[id]) renderers[id]();
+            $("gameArea").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function closeGame() {
+            if (typeof activeGameCleanup === "function") {
+                activeGameCleanup();
+            }
+            activeGameCleanup = null;
+            activeGame = "";
+            $("gameArea").hidden = true;
+            $("gameContent").innerHTML = "";
+        }
+
+        /* 1. СИМУЛЯТОР НАСЕЛЕНИЯ */
+        function renderSimulator() {
+            $("gameDescription").textContent = "Изменяй демографические показатели и наблюдай, как со временем меняется численность населения.";
+            $("gameContent").innerHTML = `
+            <div class="grid grid-2">
+                <div class="panel">
+                    <div class="field">
+                        <label for="simPop">Начальная численность населения (млн)</label>
+                        <input id="simPop" type="number" min="0.1" step="0.1" value="20">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Рождаемость: <strong id="simBirthValue" class="blue-text">18</strong> на 1000 человек</label>
+                        <input id="simBirth" type="range" min="0" max="40" value="18">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Смертность: <strong id="simDeathValue" class="red-text">8</strong> на 1000 человек</label>
+                        <input id="simDeath" type="range" min="0" max="30" value="8">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Чистая миграция: <strong id="simMigrationValue" class="green-text">0</strong> на 1000 человек</label>
+                        <input id="simMigration" type="range" min="-20" max="20" value="0">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Период прогноза: <strong id="simYearsValue">20</strong> лет</label>
+                        <input id="simYears" type="range" min="1" max="100" value="20">
+                    </div>
+                </div>
+                <div>
+                    <div class="grid grid-2">
+                        <div class="game-stat"><span>Итоговая численность населения</span><strong id="simResult" class="blue-text">—</strong></div>
+                        <div class="game-stat"><span>Общее изменение</span><strong id="simChangeBadge" class="green-text">—</strong></div>
+                    </div>
+                    <div class="panel" style="margin-top:15px">
+                        <h3>График изменения населения</h3>
+                        <div class="chart-container"><canvas id="simPopulationChart"></canvas></div>
+                    </div>
+                    <div id="simExplanation" class="game-feedback">Измени показатель, чтобы запустить симуляцию.</div>
+                </div>
+            </div>`;
+
+            const update = () => {
+                const pop = Number($("simPop").value);
+                const birth = Number($("simBirth").value);
+                const death = Number($("simDeath").value);
+                const migration = Number($("simMigration").value);
+                const years = Number($("simYears").value);
+
+                $("simBirthValue").textContent = birth;
+                $("simDeathValue").textContent = death;
+                $("simMigrationValue").textContent = migration;
+                $("simYearsValue").textContent = years;
+
+                if (!Number.isFinite(pop) || pop <= 0) {
+                    $("simResult").textContent = "Некорректное значение";
+                    return;
+                }
+
+                const annualRate = (birth - death + migration) / 1000;
+                const final = pop * Math.pow(1 + annualRate, years);
+                const labels = [];
+                const values = [];
+
+                for (let i = 0; i <= years; i++) {
+                    labels.push("Год " + i);
+                    values.push(Number((pop * Math.pow(1 + annualRate, i)).toFixed(4)));
+                }
+
+                $("simResult").textContent = populationFormat(final) + " млн";
+                const change = final - pop;
+                $("simChangeBadge").textContent = (change >= 0 ? "+" : "") + change.toFixed(2) + " млн";
+
+                $("simExplanation").textContent = annualRate > 0
+                    ? `При этих неизменных условиях численность населения растёт примерно на ${(annualRate * 100).toFixed(2)}% в год.`
+                    : annualRate < 0
+                        ? `При этих неизменных условиях численность населения сокращается примерно на ${(Math.abs(annualRate) * 100).toFixed(2)}% в год.`
+                        : "Рождаемость, смертность и миграция уравновешивают друг друга.";
+
+                makeChart("simPopulationChart", labels, [{
+                    label: "Население (млн)",
+                    data: values,
+                    borderColor: "#38bdf8",
+                    backgroundColor: "rgba(56,189,248,.12)",
+                    fill: true,
+                    tension: .3,
+                    pointRadius: years > 30 ? 0 : 2
+                }], { beginAtZero: false });
+            };
+
+            ["simPop", "simBirth", "simDeath", "simMigration", "simYears"].forEach(id => {
+                $(id).addEventListener("input", update);
+            });
+
+            update();
+        }
+
+        /* 2. ИСПЫТАНИЕ РОЖДАЕМОСТЬЮ */
+        function renderBirthChallenge() {
+            const ids = ["childcare", "housing", "education", "work"];
+            $("gameContent").innerHTML = `
+            <div class="grid grid-2">
+                <div class="panel">
+                    <div class="field">
+                        <label>Уход за детьми: <strong id="childcareValue">50</strong></label>
+                        <input id="childcare" type="range" min="0" max="100" value="50">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Доступность жилья: <strong id="housingValue">50</strong></label>
+                        <input id="housing" type="range" min="0" max="100" value="50">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Поддержка образования: <strong id="educationValue">50</strong></label>
+                        <input id="education" type="range" min="0" max="100" value="50">
+                    </div>
+                    <div class="field" style="margin-top:18px">
+                        <label>Баланс работы и личной жизни: <strong id="workValue">50</strong></label>
+                        <input id="work" type="range" min="0" max="100" value="50">
+                    </div>
+                    <div class="game-actions" style="margin-top:20px">
+                        <button id="birthCheck" class="btn btn-primary" type="button">Проверить стратегию</button>
+                        <button id="birthReset" class="btn" type="button">Сбросить</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="grid grid-2">
+                        <div class="game-stat"><span>Уровень рождаемости</span><strong id="birthRateResult" class="blue-text">—</strong></div>
+                        <div class="game-stat"><span>Стоимость мер</span><strong id="birthCostResult" class="green-text">—</strong></div>
+                    </div>
+                    <div class="panel" style="margin-top:15px">
+                        <div class="chart-container"><canvas id="birthPolicyChart"></canvas></div>
+                    </div>
+                    <div id="birthFeedback" class="game-feedback"></div>
+                </div>
+            </div>`;
+
+            function evaluate() {
+                const values = ids.map(id => Number($(id).value));
+                values.forEach((val, i) => { $(ids[i] + "Value").textContent = val; });
+                const [childcare, housing, education, work] = values;
+                const rate = 7 + childcare * 0.035 + housing * 0.025 + work * 0.025 - education * 0.008;
+                const cost = Math.round(values.reduce((a, b) => a + b, 0) * 1.8);
+
+                $("birthRateResult").textContent = rate.toFixed(2) + "‰";
+                $("birthCostResult").textContent = cost + " очков";
+
+                makeChart("birthPolicyChart", ["Уход за детьми", "Жильё", "Образование", "Баланс работы и жизни"], [{
+                    label: "Уровень мер поддержки",
+                    data: values,
+                    backgroundColor: ["#38bdf8", "#34d399", "#a78bfa", "#fbbf24"]
+                }], { type: "bar", beginAtZero: true });
+
+                const balanced = Math.max(...values) - Math.min(...values) <= 35;
+                const adequate = childcare >= 55 && housing >= 50 && work >= 50;
+
+                setFeedback("birthFeedback", adequate && balanced
+                    ? "Отличная стратегия: меры поддержки сбалансированы и помогают семьям."
+                    : "Попробуйте сбалансировать меры поддержки. Уход за детьми, жильё и баланс работы имеют ключевое значение.",
+                    adequate && balanced ? "good" : "");
+            }
+
+            ids.forEach(id => $(id).addEventListener("input", evaluate));
+            $("birthCheck").addEventListener("click", evaluate);
+            $("birthReset").addEventListener("click", () => {
+                ids.forEach(id => { $(id).value = 50; });
+                evaluate();
+            });
+            evaluate();
+        }
+
+        /* 3. ГОНКА РОСТА НАСЕЛЕНИЯ */
+        function renderGrowthRace() {
+            $("gameDescription").textContent = "Выберите две страны, задайте темпы роста населения и продвигайтесь по годам симуляции.";
+            $("gameContent").innerHTML = `
+            <div class="grid grid-2">
+                <div class="panel">
+                    <div class="field">
+                        <label for="raceCountryA">Команда A</label>
+                        <select id="raceCountryA">
+                            <option value="Индия">Индия</option>
+                            <option value="Китай">Китай</option>
+                            <option value="США">США</option>
+                            <option value="Нигерия">Нигерия</option>
+                            <option value="Япония">Япония</option>
+                        </select>
+                    </div>
+                    <div class="field" style="margin-top:15px">
+                        <label for="racePopA">Население (млн)</label>
+                        <input id="racePopA" type="number" min="0.1" value="1450" step="1">
+                    </div>
+                    <div class="field" style="margin-top:15px">
+                        <label for="raceRateA">Темп роста (%)</label>
+                        <input id="raceRateA" type="number" min="-99" max="100" step=".1" value=".8">
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="field">
+                        <label for="raceCountryB">Команда B</label>
+                        <select id="raceCountryB">
+                            <option value="Китай">Китай</option>
+                            <option value="Индия">Индия</option>
+                            <option value="США">США</option>
+                            <option value="Нигерия">Нигерия</option>
+                            <option value="Япония">Япония</option>
+                        </select>
+                    </div>
+                    <div class="field" style="margin-top:15px">
+                        <label for="racePopB">Население (млн)</label>
+                        <input id="racePopB" type="number" min="0.1" value="1410" step="1">
+                    </div>
+                    <div class="field" style="margin-top:15px">
+                        <label for="raceRateB">Темп роста (%)</label>
+                        <input id="raceRateB" type="number" min="-99" max="100" step=".1" value="-.2">
+                    </div>
+                </div>
+            </div>
+            <div class="panel" style="margin-top:18px">
+                <div class="field">
+                    <label for="raceYears">Продолжительность: <strong id="raceYearsLabel">25 лет</strong></label>
+                    <input id="raceYears" type="range" min="1" max="100" value="25">
+                </div>
+                <div class="game-actions">
+                    <button class="btn btn-primary" id="raceRun">🏁 Запустить гонку</button>
+                    <button class="btn" id="raceNext">Продвинуться на 5 лет</button>
+                    <button class="btn" id="raceReset">Сбросить</button>
+                </div>
+            </div>
+            <div class="grid grid-2" style="margin-top:18px">
+                <div class="game-stat"><span id="raceNameA">Команда A</span><strong id="raceFinalA" class="blue-text">—</strong></div>
+                <div class="game-stat"><span id="raceNameB">Команда B</span><strong id="raceFinalB" class="green-text">—</strong></div>
+            </div>
+            <div class="panel" style="margin-top:18px">
+                <h3>График гонки</h3>
+                <div class="chart-container"><canvas id="raceChart"></canvas></div>
+                <div id="raceFeedback" class="game-feedback">Задайте темпы роста и начните гонку.</div>
+            </div>`;
+
+            let currentYear = 0;
+            const valuesAt = (year, start, rate) => start * Math.pow(1 + rate / 100, year);
+
+            function updateRace() {
+                const popA = Number($("racePopA").value);
+                const popB = Number($("racePopB").value);
+                const rateA = Number($("raceRateA").value);
+                const rateB = Number($("raceRateB").value);
+                const years = Number($("raceYears").value);
+
+                $("raceYearsLabel").textContent = years + " лет";
+                $("raceNameA").textContent = $("raceCountryA").value;
+                $("raceNameB").textContent = $("raceCountryB").value;
+
+                const labels = [];
+                const seriesA = [];
+                const seriesB = [];
+
+                for (let year = 0; year <= currentYear; year++) {
+                    labels.push("Год " + year);
+                    seriesA.push(Number(valuesAt(year, popA, rateA).toFixed(3)));
+                    seriesB.push(Number(valuesAt(year, popB, rateB).toFixed(3)));
+                }
+
+                $("raceFinalA").textContent = populationFormat(valuesAt(currentYear, popA, rateA)) + " млн";
+                $("raceFinalB").textContent = populationFormat(valuesAt(currentYear, popB, rateB)) + " млн";
+
+                makeChart("raceChart", labels, [
+                    { label: $("raceCountryA").value, data: seriesA, borderColor: "#38bdf8", fill: false, tension: .25 },
+                    { label: $("raceCountryB").value, data: seriesB, borderColor: "#34d399", fill: false, tension: .25 }
+                ], { beginAtZero: false });
+
+                setFeedback("raceFeedback", `Прошло лет: ${currentYear} из ${years}.`, "good");
+            }
+
+            $("raceRun").onclick = () => { currentYear = Number($("raceYears").value); updateRace(); };
+            $("raceNext").onclick = () => { currentYear = Math.min(Number($("raceYears").value), currentYear + 5); updateRace(); };
+            $("raceReset").onclick = () => { currentYear = 0; updateRace(); };
+            $("raceYears").addEventListener("input", () => {
+                currentYear = Math.min(currentYear, Number($("raceYears").value));
+                updateRace();
+            });
+            updateRace();
+        }
+
+        /* 4. НАСЕЛЕНИЕ СКВОЗЬ ВРЕМЯ */
+        function renderTimeline() {
+            $("gameDescription").textContent = "Прокручивайте страницу вниз, чтобы отправиться в прошлое.";
+            const timeline = [
+                { year: 2026, label: "2026 г.", pop: "Около 8,3 млрд", era: "СОВРЕМЕННЫЙ МИР", text: "Глобальная сеть связи и современные мегаполисы.", image: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1400&q=85" },
+                { year: 2000, label: "2000 г.", pop: "Около 6,1 млрд", era: "ЦИФРОВАЯ ЭПОХА", text: "Распространение интернета и медицины.", image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=85" },
+                { year: 1950, label: "1950 г.", pop: "Около 2,5 млрд", era: "ПОСЛЕВОЕННЫЙ МИР", text: "Развитие систем здравоохранения и вакцинации.", image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1400&q=85" },
+                { year: 1800, label: "1800 г.", pop: "Около 1 млрд", era: "НАЧАЛО ИНДУСТРИАЛИЗАЦИИ", text: "Медленный рост населения на протяжении веков.", image: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1400&q=85" }
+            ];
+
+            $("gameContent").innerHTML = `
+            <div class="timeline-intro">
+                <span class="eyebrow">ПУТЕШЕСТВИЕ ВО ВРЕМЕНИ</span>
+                <h2>Человечество сквозь века.</h2>
+                <p>Прокручивайте вниз, чтобы узнать больше.</p>
+            </div>
+            <div class="timeline-sticky">
+                <div class="timeline-year" id="timeYear">2026 г.</div>
+                <div class="timeline-population" id="timePopulation">Около 8,3 млрд</div>
+                <div class="timeline-progress"><div id="timeProgress" class="timeline-progress-fill"></div></div>
+            </div>
+            <div id="timelineChapters"></div>`;
+
+            const chapters = $("timelineChapters");
+            timeline.forEach((item, index) => {
+                const article = document.createElement("article");
+                article.className = "timeline-chapter";
+                article.innerHTML = `
+                <div class="timeline-date">${item.label}</div>
+                <h3>${item.era}</h3>
+                <div class="timeline-population">${item.pop}</div>
+                <p>${item.text}</p>
+                <img class="timeline-image" src="${item.image}" alt="${item.era}" loading="lazy">`;
+                chapters.appendChild(article);
+            });
+
+            const onScroll = () => {
+                const sticky = $("timeYear");
+                const stickyPop = $("timePopulation");
+                if (sticky) {
+                    sticky.textContent = timeline[0].label;
+                    stickyPop.textContent = timeline[0].pop;
+                }
+            };
+            window.addEventListener("scroll", onScroll, { passive: true });
+            activeGameCleanup = () => window.removeEventListener("scroll", onScroll);
+        }
+
+        /* 5. ДЕМОГРАФИЧЕСКИЙ БАЛАНС */
+        function renderBalanceChallenge() {
+            $("gameDescription").textContent = "Используйте демографическое уравнение.";
+            const questions = [
+                { birth: 22, death: 8, migration: 1, answer: "growth", explanation: "Рождаемость превышает смертность — население растёт." },
+                { birth: 7, death: 12, migration: -2, answer: "decline", explanation: "Смертность превышает рождаемость — население сокращается." }
+            ];
+            let round = 0, score = 0;
+
+            $("gameContent").innerHTML = `
+            <div class="grid grid-3">
+                <div class="game-stat"><span>Вопрос</span><strong id="balanceRound">1 / ${questions.length}</strong></div>
+                <div class="game-stat"><span>Счёт</span><strong id="balanceScore" class="green-text">0</strong></div>
+                <div class="game-stat"><span>Формула</span><strong>Рожд. − Смерть + Мигр.</strong></div>
+            </div>
+            <div class="panel" style="margin-top:18px">
+                <h3 id="balanceQuestion">Будет ли население расти?</h3>
+                <div class="grid grid-3" style="margin:20px 0">
+                    <div class="metric-card"><div class="metric-label">Рождаемость</div><div id="balanceBirth" class="metric-value blue-text">—</div></div>
+                    <div class="metric-card"><div class="metric-label">Смертность</div><div id="balanceDeath" class="metric-value red-text">—</div></div>
+                    <div class="metric-card"><div class="metric-label">Миграция</div><div id="balanceMigration" class="metric-value green-text">—</div></div>
+                </div>
+                <div class="choice-grid">
+                    <button class="choice-btn" data-answer="growth">📈 Рост</button>
+                    <button class="choice-btn" data-answer="decline">📉 Сокращение</button>
+                    <button class="choice-btn" data-answer="stable">⚖️ Стабильность</button>
+                </div>
+                <div id="balanceFeedback" class="game-feedback">Выберите ответ.</div>
+            </div>`;
+
+            const showQ = () => {
+                const q = questions[round];
+                $("balanceRound").textContent = `${round + 1} / ${questions.length}`;
+                $("balanceBirth").textContent = q.birth + "‰";
+                $("balanceDeath").textContent = q.death + "‰";
+                $("balanceMigration").textContent = q.migration + "‰";
+            };
+
+            document.querySelectorAll("[data-answer]").forEach(btn => {
+                btn.onclick = () => {
+                    const q = questions[round];
+                    const correct = btn.dataset.answer === q.answer;
+                    if (correct) score++;
+                    $("balanceScore").textContent = score;
+                    setFeedback("balanceFeedback", (correct ? "Верно! " : "Ошибка. ") + q.explanation, correct ? "good" : "bad");
+                    setTimeout(() => {
+                        round = (round + 1) % questions.length;
+                        showQ();
+                    }, 2000);
+                };
+            });
+            showQ();
+        }
+
+        /* 6. СИМУЛЯТОР МИГРАЦИИ */
+        function renderMigration() {
+            $("gameDescription").textContent = "Перемещайте людей между двумя регионами.";
+            $("gameContent").innerHTML = `
+            <div class="grid grid-2">
+                <div class="panel">
+                    <h3>Регион A</h3>
+                    <div class="field"><label>Население</label><input id="migrationA" type="number" value="1000000"></div>
+                    <div class="field" style="margin-top:15px"><label>Из A в B</label><input id="migrationFrom" type="range" min="0" max="500000" value="100000"></div>
+                </div>
+                <div class="panel">
+                    <h3>Регион B</h3>
+                    <div class="field"><label>Население</label><input id="migrationB" type="number" value="500000"></div>
+                    <div class="field" style="margin-top:15px"><label>Из B в A</label><input id="migrationBack" type="range" min="0" max="250000" value="20000"></div>
+                </div>
+            </div>
+            <div class="panel" style="margin-top:18px">
+                <button id="migrationRun" class="btn btn-primary">✈️ Применить миграцию</button>
+                <div class="grid grid-3" style="margin-top:20px">
+                    <div class="game-stat"><span>Регион A</span><strong id="migrationFinalA" class="blue-text">—</strong></div>
+                    <div class="game-stat"><span>Регион B</span><strong id="migrationFinalB" class="green-text">—</strong></div>
+                    <div class="game-stat"><span>Всего</span><strong id="migrationTotal">—</strong></div>
+                </div>
+            </div>`;
+
+            $("migrationRun").onclick = () => {
+                const a = Number($("migrationA").value);
+                const b = Number($("migrationB").value);
+                const from = Number($("migrationFrom").value);
+                const back = Number($("migrationBack").value);
+                const finalA = a - from + back;
+                const finalB = b + from - back;
+                $("migrationFinalA").textContent = numberFormat(finalA);
+                $("migrationFinalB").textContent = numberFormat(finalB);
+                $("migrationTotal").textContent = numberFormat(finalA + finalB);
+            };
+        }
+
+        /* 7. ВИКТОРИНА */
+        function renderQuiz() {
+            $("gameDescription").textContent = "Проверьте свои знания о населении.";
+            $("gameContent").innerHTML = `
+            <div class="panel">
+                <h3>Вопрос 1 из 3</h3>
+                <p>Какая организация публикует доклад «Перспективы мирового населения»?</p>
+                <div class="choice-grid">
+                    <button class="choice-btn" onclick="alert('Верно!')">Организация Объединённых Наций</button>
+                    <button class="choice-btn" onclick="alert('Неверно')">НАТО</button>
+                </div>
+            </div>`;
+        }
+
+        /* 8. РЕЙТИНГ СТРАН */
+        async function renderRanking() {
+            $("gameDescription").textContent = "Загрузка данных Всемирного банка.";
+            $("gameContent").innerHTML = `
+            <div class="panel">
+                <h3>Рейтинг стран</h3>
+                <p id="rankingStatus" class="status-message">Загрузка...</p>
+                <div id="rankingList" class="data-list"></div>
+            </div>`;
+            try {
+                const res = await fetch("https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json&per_page=100");
+                const data = await res.json();
+                const list = $("rankingList");
+                list.innerHTML = "";
+                data[1].slice(0, 10).forEach((item, i) => {
+                    if (item.value) {
+                        const row = document.createElement("div");
+                        row.className = "data-row";
+                        row.innerHTML = `<div class="data-rank">#${i+1}</div><div class="data-row-name">${item.country.value}</div><div class="data-row-value">${populationFormat(item.value)}</div>`;
+                        list.appendChild(row);
+                    }
+                });
+                $("rankingStatus").textContent = "Данные успешно загружены.";
+            } catch (e) {
+                $("rankingStatus").textContent = "Ошибка загрузки данных.";
+            }
+        }
+
+        /* 9. СТРОИТЕЛЬ ГОРОДА */
+        function renderCityBuilder() {
+            $("gameDescription").textContent = "Распределите городской бюджет.";
+            $("gameContent").innerHTML = `
+            <div class="panel">
+                <div class="field"><label>Жильё</label><input type="range" min="0" max="50" value="20"></div>
+                <div class="field" style="margin-top:15px"><label>Транспорт</label><input type="range" min="0" max="50" value="20"></div>
+                <div class="game-stat" style="margin-top:20px"><span>Оценка города</span><strong class="green-text">85 / 100</strong></div>
+            </div>`;
+        }
+
+        /* 10. ДЕМОГРАФИЧЕСКИЙ КРИЗИС */
+        function renderCrisis() {
+            $("gameDescription").textContent = "Принимайте решения в кризисных ситуациях.";
+            $("gameContent").innerHTML = `
+            <div class="panel">
+                <h3>Сценарий: Снижение рождаемости</h3>
+                <p>Число рождений снижается. Ваши действия?</p>
+                <div class="choice-grid" style="margin-top:15px">
+                    <button class="choice-btn" onclick="alert('Отличное решение!')">Расширить поддержку семей</button>
+                    <button class="choice-btn" onclick="alert('Не лучший выбор')">Ничего не предпринимать</button>
+                </div>
+            </div>`;
+        }
+
+        /* ИНИЦИАЛИЗАЦИЯ ГЛОБУСА */
+        (function initEarthGlobe() {
+    const map = document.getElementById("populationMap");
+    const status = document.getElementById("earthStatus");
+
+    if (!map || typeof Globe !== "function") {
+        if (status) {
+            status.textContent = "Не удалось загрузить библиотеку глобуса. Проверьте подключение к интернету.";
+        }
+        return;
+    }
+
+    try {
+        map.innerHTML = "";
+
+        const globe = Globe()(map)
+            .width(map.clientWidth)
+            .height(400)
+            .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+            .backgroundColor("#0b1425")
+            .showAtmosphere(true)
+            .atmosphereColor("#38bdf8")
+            .atmosphereAltitude(0.18);
+
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.4;
+
+        function resizeEarthGlobe() {
+            if (map.clientWidth > 0) {
+                globe.width(map.clientWidth).height(400);
+            }
+        }
+
+        if (status) {
+            status.textContent = "Загрузка границ стран...";
+        }
+
+        fetch("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson")
+            .then(response => {
+                if (!response.ok) throw new Error("Не удалось загрузить границы стран");
+                return response.json();
+            })
+            .then(geo => {
+                const countries = geo.features || [];
+                let selectedCountry = null;
+                let countryDetailsPromise = null;
+
+                globe
+                    .polygonsData(countries)
+                    .polygonCapColor(item => item === selectedCountry ? "rgba(52, 211, 153, 0.9)" : "rgba(56, 189, 248, 0.25)")
+                    .polygonSideColor(item => item === selectedCountry ? "rgba(52, 211, 153, 0.35)" : "rgba(56, 189, 248, 0.08)")
+                    .polygonStrokeColor(() => "#7dd3fc")
+                    .polygonAltitude(0.006)
+                    .onPolygonClick(async country => {
+                        const p = country.properties || {};
+                        const name = p.ADMIN || p.NAME || "Неизвестная страна";
+                        selectedCountry = country;
+
+                        globe
+                            .polygonCapColor(item => item === selectedCountry ? "rgba(52, 211, 153, 0.9)" : "rgba(56, 189, 248, 0.25)")
+                            .polygonSideColor(item => item === selectedCountry ? "rgba(52, 211, 153, 0.35)" : "rgba(56, 189, 248, 0.08)")
+                            .polygonAltitude(item => item === selectedCountry ? 0.018 : 0.006)
+                            .polygonsTransitionDuration(400);
+
+                        if (status) status.textContent = "Выбрана страна: " + name;
+
+                        const info = document.getElementById("earthCountryInfo");
+                        if (info) {
+                            info.innerHTML = `<div class="country-card-content"><p class="muted">⏳ Загрузка демографических данных для ${name}...</p></div>`;
+                        }
+
+                        const code = p.ISO_A3;
+                        if (!code || code === "-99") {
+                            if (info) info.innerHTML = `<div class="country-card-content"><p>${name}: подробные данные недоступны.</p></div>`;
+                            return;
+                        }
+
+                        // Параллельно запрашиваем базовые данные о стране и демографию из Всемирного банка
+                        if (!countryDetailsPromise) {
+                            countryDetailsPromise = fetch("https://raw.githubusercontent.com/mledoze/countries/master/countries.json")
+                                .then(res => res.json());
+                        }
+
+                        try {
+                            const [allCountries, wbPop, wbBirth, wbDeath] = await Promise.all([
+                                countryDetailsPromise,
+                                worldBankIndicator(code, "SP.POP.TOTL").catch(() => null),
+                                worldBankIndicator(code, "SP.DYN.CBRT.IN").catch(() => null), // рождаемость на 1000 чел
+                                worldBankIndicator(code, "SP.DYN.CDRT.IN").catch(() => null)  // смертность на 1000 чел
+                            ]);
+
+                            const data = allCountries.find(item => item.cca3 === code) || {};
+                            const capital = data.capital?.join(", ") || "Нет данных";
+                            const languages = data.languages ? Object.values(data.languages).join(", ") : "Нет данных";
+                            const currency = data.currencies ? Object.values(data.currencies).map(item => item.name).join(", ") : "Нет данных";
+                            const flag = data.flag || "🌍";
+
+                            const populationVal = wbPop ? numberFormat(wbPop.value) : (Number(p.POP_EST) ? numberFormat(p.POP_EST) : "Нет данных");
+                            const birthVal = wbBirth && wbBirth.value !== null ? Number(wbBirth.value).toFixed(2) + " ‰ (на 1000 чел)" : "Нет данных";
+                            const deathVal = wbDeath && wbDeath.value !== null ? Number(wbDeath.value).toFixed(2) + " ‰ (на 1000 чел)" : "Нет данных";
+
+                            if (!info) return;
+
+                            info.innerHTML = `
+                                <div class="country-card-content">
+                                    <div style="font-size:42px; margin-bottom: 8px;">${flag}</div>
+                                    <h3 class="country-title">${data.name?.common || name}</h3>
+                                    <div class="country-stat">
+                                        <strong>Численность населения</strong>
+                                        <span class="blue-text" style="font-weight:700;">${populationVal}</span>
+                                    </div>
+                                    <div class="country-stat">
+                                        <strong>Коэффициент рождаемости</strong>
+                                        <span class="green-text" style="font-weight:700;">${birthVal}</span>
+                                    </div>
+                                    <div class="country-stat">
+                                        <strong>Коэффициент смертности</strong>
+                                        <span class="red-text" style="font-weight:700;">${deathVal}</span>
+                                    </div>
+                                    <div class="country-stat">
+                                        <strong>Столица</strong>
+                                        <span>${capital}</span>
+                                    </div>
+                                    <div class="country-stat">
+                                        <strong>Площадь</strong>
+                                        <span>${Number.isFinite(data.area) ? numberFormat(data.area) + " км²" : "Нет данных"}</span>
+                                    </div>
+                                    <div class="country-stat">
+                                        <strong>Регион / Языки</strong>
+                                        <span>${data.region || "Нет данных"} (${languages})</span>
+                                    </div>
+                                </div>
+                            `;
+                        } catch (err) {
+                            console.error("Ошибка при загрузке карточки страны:", err);
+                            if (info) {
+                                info.innerHTML = `<div class="country-card-content"><p class="muted">Не удалось загрузить детальные данные для ${name}.</p></div>`;
+                            }
+                        }
+                    });
+
+                if (status) {
+                    status.textContent = "Глобус загружен! Нажмите на любую страну на сфере.";
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка загрузки границ стран:", error);
+                if (status) {
+                    status.textContent = "Не удалось загрузить границы стран. Проверьте интернет-соединение.";
+                }
+            });
+
+        window.addEventListener("resize", resizeEarthGlobe);
+    } catch (error) {
+        console.error("Ошибка инициализации глобуса:", error);
+        if (status) status.textContent = "Ошибка запуска 3D глобуса.";
+    }
+})();
+
+        // Инициализация при загрузке
+        loadCountries();
+        setInputMode("country");
+        showPage("home");
+    </script>
+</body>
+</html>
