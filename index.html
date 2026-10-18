@@ -1759,7 +1759,6 @@
             results.innerHTML = "";
             results.style.display = "grid";
 
-            // Ищем по нашему общему массиву всех стран
             const matches = countryList.filter(c => c.name.toLowerCase().includes(query));
             
             if (matches.length === 0) {
@@ -1772,14 +1771,22 @@
                 btn.type = "button";
                 btn.className = "choice-btn";
                 btn.textContent = c.name;
-                btn.onclick = () => {
+                
+                // Используем touchstart и onclick одновременно для идеального отклика на телефонах
+                const chooseThisCountry = (e) => {
+                    e.preventDefault();
                     $("countrySearch").value = c.name;
                     results.style.display = "none";
                     selectCountry(c);
                 };
+
+                btn.onclick = chooseThisCountry;
+                btn.ontouchstart = chooseThisCountry;
+
                 results.appendChild(btn);
             });
         }
+    
 
         function selectCountry(c) {
             $("population").value = c.pop;
