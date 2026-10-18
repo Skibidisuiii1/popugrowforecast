@@ -1618,44 +1618,34 @@
                 : "Список стран";
         }
 
-        async function selectCountry() {
-            const code = $("country").value;
-            if (!code) return;
-
-            const country = countryList.find(item => item.id === code);
-            if (!country) return;
-
-            selectedCountryCode = code;
-            selectedCountryName = country.name;
-            $("country").disabled = true;
-            $("countryStatus").textContent = "⏳ Загрузка данных о населении и темпах роста...";
-
+        async function selectCountry(code, name) {
+            $("countryStatus").textContent = "⏳ Загрузка актуальных данных Всемирного банка...";
             try {
-                const population = await worldBankIndicator(code, "SP.POP.TOTL");
-                $("population").value = population.value;
-                $("forecastTitle").textContent = "Прогноз населения: " + country.name;
-                $("forecastSubtitle").textContent = "Прогноз роста населения для страны «" + country.name + "»";
+                // Параллельно запрашиваем население и темп роста из API Всемирного банка
+                const [popRes, growthRes] = await Promise.all([
+                    worldBankIndicator(code, "SP.POP.TOTL"),
+                    worldBankIndicator(code, "SP.POP.GROW").catch(() => null)
+                ]);
 
-                try {
-                    const growth = await worldBankIndicator(code, "SP.POP.GROW");
-                    $("rate").value = Number(growth.value).toFixed(2);
-                    $("rate").placeholder = "Автоматически из данных Всемирного банка";
-                    $("rate").readOnly = true;
-                    $("countryStatus").textContent =
-                        `Население: ${numberFormat(population.value)} (${population.date}); темп роста: ${Number(growth.value).toFixed(2)}% (${growth.date}). Данные Всемирного банка.`;
-                } catch (growthError) {
-                    $("rate").value = "";
-                    $("rate").placeholder = "Темп роста недоступен";
-                    $("countryStatus").textContent =
-                        `Данные о населении страны «${country.name}» загружены (${population.date}), но темп роста недоступен.`;
+                // Подставляем данные в поля формы
+                $("population").value = popRes.value;
+                
+                if (growthRes && growthRes.value !== null) {
+                    $("rate").value = Number(growthRes.value).toFixed(2);
+                } else {
+                    $("rate").value = "1.0"; // Значение по умолчанию, если у страны нет официального индекса роста
                 }
 
+                $("forecastTitle").textContent = "Прогноз: " + name;
+                
+                const growthText = growthRes && growthRes.value !== null ? Number(growthRes.value).toFixed(2) + "% в год" : "нет данных";
+                $("countryStatus").textContent = `Данные загружены: Население — ${numberFormat(popRes.value)} чел., Рост — ${growthText} (${popRes.date}).`;
+                
+                // Автоматически запускаем расчет прогноза
                 calculatePrediction();
-            } catch (error) {
-                $("countryStatus").textContent = "Не удалось загрузить данные страны. Попробуй выбрать другую страну.";
-                console.error(error);
-            } finally {
-                $("country").disabled = false;
+            } catch (e) {
+                console.error(e);
+                $("countryStatus").textContent = "Не удалось загрузить детальные данные для этой страны. Попробуйте ввести параметры вручную.";
             }
         }
 
