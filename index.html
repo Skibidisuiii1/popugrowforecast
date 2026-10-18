@@ -2220,46 +2220,153 @@
         }
 
         /* 7. ВИКТОРИНА */
+        /* 7. ВИКТОРИНА — 10 ПОЛНОЦЕННЫХ ВОПРОСОВ */
         function renderQuiz() {
-            $("gameDescription").textContent = "Проверьте свои знания о населении.";
-            $("gameContent").innerHTML = `
-            <div class="panel">
-                <h3>Вопрос 1 из 3</h3>
-                <p>Какая организация публикует доклад «Перспективы мирового населения»?</p>
-                <div class="choice-grid">
-                    <button class="choice-btn" onclick="alert('Верно!')">Организация Объединённых Наций</button>
-                    <button class="choice-btn" onclick="alert('Неверно')">НАТО</button>
-                </div>
-            </div>`;
+            $("gameTitle").textContent = "🧠 Викторина о населении мира";
+
+            const questions = [
+                { q: "1. Какая организация публикует регулярный доклад «Перспективы мирового населения»?", choices: ["Организация Объединённых Наций (ООН)", "Всемирный банк", "НАТО", "ЮНЕСКО"], answer: 0, explain: "Доклад публикуется Департаментом по экономическим и социальным вопросам ООН." },
+                { q: "2. Что показывает общий коэффициент рождаемости?", choices: ["Число рождений на 100 человек", "Число рождений на 1 000 человек за год", "Количество детей в одной семье", "Число рождений на 1 км²"], answer: 1, explain: "Коэффициент обычно измеряется в промилле (‰) — число рождений на 1000 жителей в год." },
+                { q: "3. Что такое «чистая миграция»?", choices: ["Сумма всех родившихся и умерших", "Разница между иммиграцией (прибывшими) и эмиграцией (выбывшими)", "Площадь страны, деленная на население", "Общее число туристов"], answer: 1, explain: "Чистая миграция — это сальдо миграции: прибывшие минус выехавшие." },
+                { q: "4. Если рождений больше, чем смертей, а миграция равна 0, что происходит с населением?", choices: ["Население сокращается", "Население остается неизменным", "Население растет (естественный прирост)", "Население стареет"], answer: 2, explain: "Превышение рождаемости над смертностью дает положительный естественный прирост." },
+                { q: "5. В каких единицах обычно измеряется плотность населения?", choices: ["Человек на квадратный километр (чел/км²)", "Проценты (%)", "Тысячи человек на город", "Человек на квадратный метр"], answer: 0, explain: "Плотность населения — это число жителей, приходящееся на 1 км² территории." },
+                { q: "6. Какой фактор напрямую ведет к естественной убыли населения?", choices: ["Смертность превышает рождаемость", "Рождаемость превышает смертность", "Высокий уровень иммиграции", "Увеличение средней продолжительности жизни"], answer: 0, explain: "Естественная убыль происходит, когда количество умерших больше количества родившихся." },
+                { q: "7. Что описывает Суммарный коэффициент рождаемости (TFR)?", choices: ["Среднее число детей, которое родила бы одна женщина за свою жизнь", "Число смертей на 1000 человек", "Общий объем мигрантов", "Процент городского населения"], answer: 0, explain: "TFR (Total Fertility Rate) показывает среднее количество рождений на одну женщину." },
+                { q: "8. Какой уровень суммарного коэффициента рождаемости нужен для простого воспроизводства населения?", choices: ["Около 1.0", "Примерно 2.1", "Ровно 3.5", "Более 5.0"], answer: 1, explain: "Уровень ~2.1 гарантирует замещение поколения родителей без учета миграции." },
+                { q: "9. Что является основным следствием старения населения в стране?", choices: ["Увеличение нагрузки на систему здравоохранения и пенсионные фонды", "Резкое сокращение числа городов", "Полная остановка миграции", "Рост младенческой смертности"], answer: 0, explain: "При старении населения возрастает доля пожилых людей, требующих социальной защиты и медицины." },
+                { q: "10. Почему исторические данные о численности населения древнего мира являются приблизительными?", choices: ["Тогда не проводились точные цифровые переписи населения", "Люди не вели записи", "Границы стран постоянно исчезали", "Население планеты не менялось"], answer: 0, explain: "Древние оценки строятся на археологических и косвенных исторических источниках." }
+            ];
+
+            let index = 0, score = 0, answered = false;
+
+            const showQuestion = () => {
+                answered = false;
+                const q = questions[index];
+                $("gameContent").innerHTML = `
+                <div class="panel">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                        <span>Вопрос ${index + 1} из ${questions.length}</span>
+                        <span class="green-text" style="font-weight:bold;">Счет: ${score}</span>
+                    </div>
+                    <h3>${q.q}</h3>
+                    <div class="choice-grid" id="quizChoices"></div>
+                    <div id="quizFeedback" class="game-feedback">Выберите вариант ответа.</div>
+                    <button id="quizNext" class="btn btn-primary" style="margin-top:20px; display:none;">Следующий вопрос →</button>
+                </div>`;
+
+                const container = $("quizChoices");
+                q.choices.forEach((choice, i) => {
+                    const btn = document.createElement("button");
+                    btn.className = "choice-btn";
+                    btn.textContent = choice;
+                    btn.onclick = () => {
+                        if (answered) return;
+                        answered = true;
+                        const correct = i === q.answer;
+                        if (correct) score++;
+                        btn.classList.add(correct ? "correct" : "incorrect");
+                        Array.from(container.children).forEach((b, idx) => {
+                            b.disabled = true;
+                            if (idx === q.answer) b.classList.add("correct");
+                        });
+                        setFeedback("quizFeedback", (correct ? "Правильно! " : "Неверно. ") + q.explain, correct ? "good" : "bad");
+                        $("quizNext").style.display = "inline-flex";
+                    };
+                    container.appendChild(btn);
+                });
+
+                $("quizNext").onclick = () => {
+                    index++;
+                    if (index < questions.length) showQuestion();
+                    else {
+                        $("gameContent").innerHTML = `
+                        <div class="panel" style="text-align:center; padding:40px;">
+                            <div style="font-size:50px;">🎉</div>
+                            <h2>Викторина завершена!</h2>
+                            <div class="result-number blue-text">${score} / ${questions.length}</div>
+                            <p class="muted">Вы успешно ответили на ${score} из 10 вопросов.</p>
+                            <button class="btn btn-primary" onclick="renderQuiz()">Пройти еще раз</button>
+                        </div>`;
+                    }
+                };
+            };
+            showQuestion();
         }
 
         /* 8. РЕЙТИНГ СТРАН */
         async function renderRanking() {
-            $("gameDescription").textContent = "Загрузка данных Всемирного банка.";
+            $("gameTitle").textContent = "🏆 Рейтинг населения стран мира";
             $("gameContent").innerHTML = `
             <div class="panel">
-                <h3>Рейтинг стран</h3>
-                <p id="rankingStatus" class="status-message">Загрузка...</p>
-                <div id="rankingList" class="data-list"></div>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Поиск страны</label>
+                        <input id="rankSearch" type="search" placeholder="Поиск по названию..." onkeyup="filterRank()">
+                    </div>
+                </div>
+                <p id="rankStatus" class="muted" style="margin-top:10px; font-size:12px;">⏳ Загрузка полных данных Всемирного банка...</p>
+                <div id="rankList" class="data-list"></div>
             </div>`;
+
             try {
-                const res = await fetch("https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json&per_page=100");
+                const res = await fetch("https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json&per_page=15000");
                 const data = await res.json();
-                const list = $("rankingList");
-                list.innerHTML = "";
-                data[1].slice(0, 10).forEach((item, i) => {
-                    if (item.value) {
-                        const row = document.createElement("div");
-                        row.className = "data-row";
-                        row.innerHTML = `<div class="data-rank">#${i+1}</div><div class="data-row-name">${item.country.value}</div><div class="data-row-value">${populationFormat(item.value)}</div>`;
-                        list.appendChild(row);
+                if (!Array.isArray(data[1])) throw new Error("No data");
+
+                const countryMap = new Map();
+                data[1].forEach(item => {
+                    // Исключаем агрегированные регионы и материки (у них region.id === 'NA')
+                    if (item.country && item.country.id && item.value !== null && item.country.region && item.country.region.id !== "NA") {
+                        const code = item.country.id;
+                        if (!countryMap.has(code) || Number(item.date) > countryMap.get(code).year) {
+                            countryMap.set(code, {
+                                name: item.country.value,
+                                population: Number(item.value),
+                                year: Number(item.date)
+                            });
+                        }
                     }
                 });
-                $("rankingStatus").textContent = "Данные успешно загружены.";
+
+                window.allRankings = Array.from(countryMap.values()).sort((a, b) => b.population - a.population);
+                window.filterRank();
             } catch (e) {
-                $("rankingStatus").textContent = "Ошибка загрузки данных.";
+                $("rankStatus").textContent = "Не удалось загрузить данные рейтингов.";
             }
         }
+
+        window.filterRank = function() {
+            const list = $("rankList");
+            const query = ($("rankSearch") ? $("rankSearch").value : "").trim().toLowerCase();
+            if (!list || !window.allRankings) return;
+
+            const filtered = window.allRankings.filter(item => item.name.toLowerCase().includes(query));
+            list.innerHTML = "";
+
+            if (!filtered.length) {
+                list.innerHTML = "<div class='game-feedback'>Страны не найдены.</div>";
+                return;
+            }
+
+            const maxPop = filtered[0].population;
+            filtered.slice(0, 50).forEach((item, index) => {
+                const row = document.createElement("div");
+                row.className = "data-row";
+                const share = (item.population / maxPop) * 100;
+                row.innerHTML = `
+                    <div class="data-rank">#${index + 1}</div>
+                    <div>
+                        <div class="data-row-name">${item.name}</div>
+                        <div class="progress-track"><div class="progress-fill" style="width:${share}%"></div></div>
+                        <div style="font-size:11px; color:var(--muted)">Год: ${item.year}</div>
+                    </div>
+                    <div class="data-row-value">${populationFormat(item.population)}</div>
+                `;
+                list.appendChild(row);
+            });
+
+            $("rankStatus").textContent = `Загружено стран: ${filtered.length}. Показаны первые ${Math.min(50, filtered.length)}.`;
+        };
 
         /* 9. СТРОИТЕЛЬ ГОРОДА */
         function renderCityBuilder() {
