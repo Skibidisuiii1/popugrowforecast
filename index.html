@@ -1747,7 +1747,7 @@
         }
 
         function filterCountries() {
-            const query = $("countrySearch").value.trim().toLowerCase();
+            const query = ($("countrySearch") ? $("countrySearch").value : "").trim().toLowerCase();
             const results = $("countryResults");
             if (!results) return;
 
@@ -1759,7 +1759,7 @@
             results.innerHTML = "";
             results.style.display = "grid";
 
-            // Ищем совпадения по нашему полному списку countryList
+            // Ищем по нашему общему массиву всех стран
             const matches = countryList.filter(c => c.name.toLowerCase().includes(query));
             
             if (matches.length === 0) {
