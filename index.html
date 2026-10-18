@@ -2432,6 +2432,8 @@
         }
 
         /* 8. РЕЙТИНГ СТРАН */
+        /* 8. РЕЙТИНГ СТРАН — ИСПРАВЛЕННЫЙ ПОИСК */
+        /* 8. РЕЙТИНГ СТРАН — НАДЕЖНАЯ ВСТРОЕННАЯ ВЕРСИЯ */
         async function renderRanking() {
             $("gameTitle").textContent = "🏆 Рейтинг населения стран мира";
             $("gameContent").innerHTML = `
@@ -2442,35 +2444,18 @@
                         <input id="rankSearch" type="search" placeholder="Поиск по названию..." onkeyup="filterRank()">
                     </div>
                 </div>
-                <p id="rankStatus" class="muted" style="margin-top:10px; font-size:12px;">⏳ Загрузка полных данных Всемирного банка...</p>
+                <p id="rankStatus" class="muted" style="margin-top:10px; font-size:12px;">Готово! Данные загружены локально.</p>
                 <div id="rankList" class="data-list"></div>
             </div>`;
 
-            try {
-                const res = await fetch("https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json&per_page=15000");
-                const data = await res.json();
-                if (!Array.isArray(data[1])) throw new Error("No data");
+            // Используем наш полный массив countryList, который у нас уже есть
+            window.allRankings = countryList.map(c => ({
+                name: c.name,
+                population: c.pop,
+                year: 2023
+            })).sort((a, b) => b.population - a.population);
 
-                const countryMap = new Map();
-                data[1].forEach(item => {
-                    // Исключаем агрегированные регионы и материки (у них region.id === 'NA')
-                    if (item.country && item.country.id && item.value !== null && item.country.region && item.country.region.id !== "NA") {
-                        const code = item.country.id;
-                        if (!countryMap.has(code) || Number(item.date) > countryMap.get(code).year) {
-                            countryMap.set(code, {
-                                name: item.country.value,
-                                population: Number(item.value),
-                                year: Number(item.date)
-                            });
-                        }
-                    }
-                });
-
-                window.allRankings = Array.from(countryMap.values()).sort((a, b) => b.population - a.population);
-                window.filterRank();
-            } catch (e) {
-                $("rankStatus").textContent = "Не удалось загрузить данные рейтингов.";
-            }
+            window.filterRank();
         }
 
         window.filterRank = function() {
@@ -2498,13 +2483,15 @@
                         <div class="progress-track"><div class="progress-fill" style="width:${share}%"></div></div>
                         <div style="font-size:11px; color:var(--muted)">Год: ${item.year}</div>
                     </div>
-                    <div class="data-row-value">${populationFormat(item.population)}</div>
+                    <div class="data-row-value">${numberFormat(item.population)}</div>
                 `;
                 list.appendChild(row);
             });
 
-            $("rankStatus").textContent = `Загружено стран: ${filtered.length}. Показаны первые ${Math.min(50, filtered.length)}.`;
+            $("rankStatus").textContent = `Показано стран: ${filtered.length}.`;
         };
+
+            
 
         /* 9. СТРОИТЕЛЬ ГОРОДА */
         function renderCityBuilder() {
