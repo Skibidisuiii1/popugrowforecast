@@ -1759,10 +1759,11 @@
             results.innerHTML = "";
             results.style.display = "grid";
 
+            // Ищем совпадения по нашему полному списку countryList
             const matches = countryList.filter(c => c.name.toLowerCase().includes(query));
             
             if (matches.length === 0) {
-                results.innerHTML = "<div class='game-feedback'>Страна не найдена. Проверьте правильность ввода.</div>";
+                results.innerHTML = "<div class='game-feedback' style='padding:10px;'>Страна не найдена</div>";
                 return;
             }
 
@@ -1783,8 +1784,16 @@
         function selectCountry(c) {
             $("population").value = c.pop;
             $("rate").value = c.rate;
-            $("forecastTitle").textContent = "Прогноз: " + c.name;
-            $("countryStatus").textContent = `Выбрана страна: ${c.name}. Население: ${numberFormat(c.pop)} чел., Рост: ${c.rate}% в год.`;
+            
+            // Если у тебя на странице есть блок статуса, выведем инфо
+            if ($("countryStatus")) {
+                $("countryStatus").textContent = `Выбрана страна: ${c.name}. Население: ${numberFormat(c.pop)} чел., Рост: ${c.rate}% в год.`;
+            }
+            
+            if ($("forecastTitle")) {
+                $("forecastTitle").textContent = "Прогноз: " + c.name;
+            }
+            
             calculatePrediction();
         }
 
